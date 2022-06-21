@@ -20,3 +20,5 @@ You can then run the code.
 ```
 python train_model.py
 ```
+
+The code will download the training and testing data (if you run it for the first time) and train a model from scratch. The model is then saved as the file mnist.pt
