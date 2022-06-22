@@ -1,4 +1,5 @@
 import torch
+import autograd.numpy as np
 
 from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
@@ -11,6 +12,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 
+from scipy.optimize import minimize
+from scipy.optimize import Bounds
+from autograd import grad
+
+from lib_models import *
+from lib_layers import *
 
 
 class MNISTNet(nn.Module):
@@ -38,8 +45,8 @@ def save_model(model, name):
     torch.save(model.state_dict(), name)
 
 
-def load_model(model_class, name, *args):
-    model = model_class(*args)
+def load_model(model_class, name):
+    model = model_class()
     model.load_state_dict(torch.load(name))
 
     return model
@@ -91,25 +98,84 @@ def test(model, dataloader, loss_fn, device):
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 
-device = 'cpu'
-train_kwargs = {'batch_size': 100}
-test_kwargs = {'batch_size': 1000}
-transform = transforms.ToTensor()
+def attack(model, x0, y0, eps):
+    def obj_func(x, model, y0):
+        output = model.apply(x).reshape(-1)
+        y0_score = output[y0]
 
-train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
+        output_no_y0 = output - np.eye(len(output))[y0] * 1e9
+        max_score = np.max(output_no_y0)
+
+        return y0_score - max_score
+
+    lower = np.maximum(x0 - eps, 0.0)
+    upper = np.minimum(x0 + eps, 1.0)
+
+    x = x0.copy()
+    
+    args = (model, y0)
+    jac = grad(obj_func)
+    bounds = Bounds(lower, upper)
+
+    res = minimize(obj_func, x, args=args, jac=jac, bounds=bounds)
+
+    if res.fun <= 0: # an adversarial sample is generated
+        print('\nFinding adversarial sample!!!\n')
+        print('adv = {}'.format(res.x[400:420]))
+
+        pred = model.apply(res.x).reshape(-1)
+        y_adv = np.argmax(pred)
+
+        print('pred adv = {}'.format(pred))
+        print('lbl adv = {}\n'.format(y_adv))
+
+
+def get_layers(model):
+    layers, params = list(), list(model.named_parameters())
+
+    for i in range(len(params)):
+        name, param = params[i]
+        if 'weight' in name:
+            weight = np.array(param.data)
+        elif 'bias' in name:
+            bias = np.array(param.data)
+
+            layers.append(Linear(weight, bias, None))
+            if i < len(params) - 1: # last layer
+                layers.append(Function('relu', None))
+
+    return layers
+
+
+def get_formal_model(model, shape, lower, upper):
+    lower, upper = lower.copy(), upper.copy()
+    layers = get_layers(model)
+    
+    return Model(shape, lower, upper, layers)
+
+
+test_kwargs = {'batch_size': 1}
+transform = transforms.ToTensor()
 test_dataset = datasets.MNIST('./data', train=False, transform=transform)
 
-train_loader = torch.utils.data.DataLoader(train_dataset, **train_kwargs)
 test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
-model = MNISTNet().to(device)
+model = load_model(MNISTNet, 'mnist.pt')
+formal_model = get_formal_model(model, (1,784), np.zeros(784), np.ones(784))
+cnt = 0
 
-optimizer = optim.SGD(model.parameters(), lr=0.1)
-num_of_epochs = 20
+for x, y in test_loader:
+    x0 = x.numpy().reshape(-1)
+    pred = model(x).detach().numpy().reshape(-1)
+    y0 = np.argmax(pred)
 
-for epoch in range(num_of_epochs):
-    print('\n------------- Epoch {} -------------\n'.format(epoch))
-    train(model, train_loader, nn.CrossEntropyLoss(), optimizer, device)
-    test(model, test_loader, nn.CrossEntropyLoss(), device)
+    print('\nimg = {}'.format(x0[400:420]))
+    print('pred img = {}'.format(pred))
+    print('lbl imp = {}\n'.format(y0))
 
-save_model(model, 'mnist.pt')
+    attack(formal_model, x0, y0, 0.1)
+    cnt += 1
+
+    print('\n===========================\n')
+
+    if cnt == 10: break
