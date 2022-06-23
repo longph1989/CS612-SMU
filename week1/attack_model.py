@@ -19,6 +19,8 @@ from autograd import grad
 from lib_models import *
 from lib_layers import *
 
+import matplotlib.pyplot as plt
+
 
 class MNISTNet(nn.Module):
     def __init__(self):
@@ -98,6 +100,29 @@ def test(model, dataloader, loss_fn, device):
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 
+
+def denormalize(x):
+        x = (x * 255).astype('uint8')
+        x = x.reshape(28,28)
+
+        return x
+
+
+def display(x0, y0, x, y):
+    x0 = denormalize(x0)
+    x = denormalize(x)
+
+    fig, ax = plt.subplots(1, 2)
+
+    ax[0].set(title='Original. Label is {}'.format(y0))
+    ax[1].set(title='Adv. sample. Label is {}'.format(y))
+
+    ax[0].imshow(x0, cmap='gray')
+    ax[1].imshow(x, cmap='gray')
+    
+    plt.show()
+
+
 def attack(model, x0, y0, eps):
     def obj_func(x, model, y0):
         output = model.apply(x).reshape(-1)
@@ -120,7 +145,7 @@ def attack(model, x0, y0, eps):
     res = minimize(obj_func, x, args=args, jac=jac, bounds=bounds)
 
     if res.fun <= 0: # an adversarial sample is generated
-        print('\nFinding adversarial sample!!!\n')
+        print('\nFound an adversarial sample!!!\n')
         print('adv = {}'.format(res.x[400:420]))
 
         pred = model.apply(res.x).reshape(-1)
@@ -128,6 +153,10 @@ def attack(model, x0, y0, eps):
 
         print('pred adv = {}'.format(pred))
         print('lbl adv = {}\n'.format(y_adv))
+
+        display(x0, y0, res.x, y_adv)
+    else:
+        print('\nCan\'t find adversarial samples!!!\n')
 
 
 def get_layers(model):
@@ -173,7 +202,8 @@ for x, y in test_loader:
     print('pred img = {}'.format(pred))
     print('lbl imp = {}\n'.format(y0))
 
-    attack(formal_model, x0, y0, 0.1)
+    eps = 0.05
+    attack(formal_model, x0, y0, eps)
     cnt += 1
 
     print('\n===========================\n')

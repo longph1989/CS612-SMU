@@ -23,7 +23,7 @@ source cs612_venv/bin/activate
 Then install some libraries.
 
 ```
-pip install torch torchvision autograd sicpy
+pip install torch torchvision autograd sicpy matplotlib
 ```
 
 You can then run the code.
