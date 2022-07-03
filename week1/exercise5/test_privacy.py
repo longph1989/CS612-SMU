@@ -11,25 +11,31 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 
-class MNISTNet(nn.Module):
+class CIFAR10Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fc1 = nn.Linear(784, 10)
-        self.fc2 = nn.Linear(10, 10)
-        self.fc3 = nn.Linear(10, 10)
-        self.fc4 = nn.Linear(10, 10)
+        self.conv1 = nn.Conv2d(3, 16, 3)
+        self.pool1 = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(16, 64, 3)
+        self.pool2 = nn.MaxPool2d(2, 2)
+        self.fc1 = nn.Linear(2304, 100)
+        self.fc2 = nn.Linear(100, 10)
 
     def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.pool1(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = self.pool2(x)
         x = torch.flatten(x, 1)
         x = self.fc1(x)
         x = F.relu(x)
         x = self.fc2(x)
-        x = F.relu(x)
-        x = self.fc3(x)
-        x = F.relu(x)
-        x = self.fc4(x)
         output = x # cross entropy in pytorch already includes softmax
         return output
 
@@ -92,24 +98,16 @@ def test(model, dataloader, loss_fn, device):
 
 
 device = 'cpu'
-train_kwargs = {'batch_size': 100}
 test_kwargs = {'batch_size': 1000}
 transform = transforms.ToTensor()
 
-train_dataset = datasets.MNIST('./data', train=True, download=True, transform=transform)
-test_dataset = datasets.MNIST('./data', train=False, transform=transform)
+train_dataset = datasets.CIFAR10('../data', download=True, train=True, transform=transform)
+train_loader = torch.utils.data.DataLoader(train_dataset, **test_kwargs)
 
-train_loader = torch.utils.data.DataLoader(train_dataset, **train_kwargs)
+test_dataset = datasets.CIFAR10('../data', train=False, transform=transform)
 test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
-model = MNISTNet().to(device)
+model = load_model(CIFAR10Net, 'cifar10.pt')
 
-optimizer = optim.SGD(model.parameters(), lr=0.1)
-num_of_epochs = 20
-
-for epoch in range(num_of_epochs):
-    print('\n------------- Epoch {} -------------\n'.format(epoch))
-    train(model, train_loader, nn.CrossEntropyLoss(), optimizer, device)
-    test(model, test_loader, nn.CrossEntropyLoss(), device)
-
-save_model(model, 'mnist.pt')
+test(model, train_loader, nn.CrossEntropyLoss(), device)
+test(model, test_loader, nn.CrossEntropyLoss(), device)

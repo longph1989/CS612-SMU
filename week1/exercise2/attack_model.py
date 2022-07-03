@@ -185,7 +185,7 @@ def get_formal_model(model, shape, lower, upper):
 
 test_kwargs = {'batch_size': 1}
 transform = transforms.ToTensor()
-test_dataset = datasets.MNIST('./data', train=False, transform=transform)
+test_dataset = datasets.MNIST('../data', train=False, transform=transform)
 
 test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
