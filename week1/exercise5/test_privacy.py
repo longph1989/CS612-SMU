@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
@@ -84,13 +85,23 @@ def test(model, dataloader, loss_fn, device):
     
     model.eval()
     test_loss, correct = 0, 0
+    cnt, passed = 0, 0
     
     with torch.no_grad():
         for x, y in dataloader:
             x, y = x.to(device), y.to(device)
             pred = model(x)
+            # print(pred)
+            max_val = np.max(F.softmax(pred).detach().numpy().reshape(-1))
+            if max_val > 0.95: passed += 1
+
+            cnt += 1
             test_loss += loss_fn(pred, y).item()
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+
+            if cnt == 1000: break
+
+    print('passed = {}'.format(passed))
     
     test_loss /= num_batches
     correct /= size
@@ -98,7 +109,7 @@ def test(model, dataloader, loss_fn, device):
 
 
 device = 'cpu'
-test_kwargs = {'batch_size': 1000}
+test_kwargs = {'batch_size': 1}
 transform = transforms.ToTensor()
 
 train_dataset = datasets.CIFAR10('../data', download=True, train=True, transform=transform)

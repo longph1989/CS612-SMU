@@ -106,7 +106,7 @@ model = load_model(CensusNet, 'census.pt')
 labels = np.array(ast.literal_eval(open('census/data/labels.txt', 'r').readline()))
 cnt = 0
 
-for i in range(100):
+for i in range(30):
     file_name = 'census/data/data' + str(i) + '.txt'
     x = np.array(ast.literal_eval(open(file_name, 'r').readline()))
     x = x.reshape(1, 13)
@@ -114,28 +114,10 @@ for i in range(100):
     
     if np.argmax(model(x).detach().numpy().reshape(-1)) == labels[i]:
         cnt += 1
+        print(i)
 
-print('accuracy = {}%'.format(cnt))
+print('accuracy = {}%'.format(cnt / 30))
 
-diff = 0
-
-for i in range(100):
-    file_name = 'census/data/data' + str(i) + '.txt'
-    x1 = np.array(ast.literal_eval(open(file_name, 'r').readline()))
-    x2 = x1.copy()
-
-    x2[8] = 1 - x2[8]
-
-    x1 = x1.reshape(1, 13)
-    x1 = torch.Tensor(x1)
-
-    x2 = x2.reshape(1, 13)
-    x2 = torch.Tensor(x2)
-
-    lbl1 = np.argmax(model(x1).detach().numpy().reshape(-1))
-    lbl2 = np.argmax(model(x2).detach().numpy().reshape(-1))
-    
-    if lbl1 != lbl2:
-        diff += 1
-
-print('diff cnt = {}'.format(diff))
+for i in range(30):
+    # flip the gender (the 8th feature) and see the difference
+    pass
