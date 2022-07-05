@@ -114,9 +114,8 @@ for i in range(30):
     
     if np.argmax(model(x).detach().numpy().reshape(-1)) == labels[i]:
         cnt += 1
-        print(i)
 
-print('accuracy = {}%'.format(cnt / 30))
+print('accuracy = {}%'.format(int(cnt / 30 * 100)))
 
 for i in range(30):
     # flip the gender (the 8th feature) and see the difference
