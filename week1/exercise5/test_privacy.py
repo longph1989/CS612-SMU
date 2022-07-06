@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 
 from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
@@ -14,6 +13,9 @@ from torchvision import datasets, transforms
 
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
+
+import numpy as np
+import ast
 
 
 class CIFAR10Net(nn.Module):
@@ -91,15 +93,8 @@ def test(model, dataloader, loss_fn, device):
         for x, y in dataloader:
             x, y = x.to(device), y.to(device)
             pred = model(x)
-            # print(pred)
-            max_val = np.max(F.softmax(pred).detach().numpy().reshape(-1))
-            if max_val > 0.95: passed += 1
-
-            cnt += 1
             test_loss += loss_fn(pred, y).item()
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
-
-            if cnt == 1000: break
 
     print('passed = {}'.format(passed))
     
@@ -108,17 +103,25 @@ def test(model, dataloader, loss_fn, device):
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 
-device = 'cpu'
-test_kwargs = {'batch_size': 1}
-transform = transforms.ToTensor()
+def print_confidence(model, data):
+    with torch.no_grad():
+        for i in range(20):
+            if data == 'train':
+                file_name = './train/train' + str(i) + '.txt'
+            elif data == 'test':
+                file_name = './test/test' + str(i) + '.txt'
 
-train_dataset = datasets.CIFAR10('../data', download=True, train=True, transform=transform)
-train_loader = torch.utils.data.DataLoader(train_dataset, **test_kwargs)
+            # read data, convert to Tensor, apply the model then softmax function to get the confidence
 
-test_dataset = datasets.CIFAR10('../data', train=False, transform=transform)
-test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
 model = load_model(CIFAR10Net, 'cifar10.pt')
 
-test(model, train_loader, nn.CrossEntropyLoss(), device)
-test(model, test_loader, nn.CrossEntropyLoss(), device)
+print('\n===================================\n')
+print('Confidence with train data')
+print_confidence(model, 'train')
+print('\n===================================\n')
+
+print('\n===================================\n')
+print('Confidence with test data')
+print_confidence(model, 'test')
+print('\n===================================\n')
