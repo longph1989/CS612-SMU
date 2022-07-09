@@ -1,5 +1,4 @@
 import torch
-import random
 
 from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
@@ -43,10 +42,6 @@ class CensusNet(nn.Module):
         return output
 
 
-def save_model(model, name):
-    torch.save(model.state_dict(), name)
-
-
 def load_model(model_class, name):
     model = model_class()
     model.load_state_dict(torch.load(name))
@@ -54,58 +49,12 @@ def load_model(model_class, name):
     return model
 
 
-def print_model(model):
-    for name, param in model.named_parameters():
-        print(name)
-        print(param.data)
-
-
-def train(model, dataloader, loss_fn, optimizer, device):
-    size = len(dataloader.dataset)
-    model.train()
-
-    for batch, (x, y) in enumerate(dataloader):
-        x, y = x.to(device), y.to(device)
-
-        # Compute prediction error
-        pred = model(x)
-        loss = loss_fn(pred, y)
-
-        # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if batch % 100 == 0:
-            loss, current = loss.item(), batch * len(x)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-
-
-def test(model, dataloader, loss_fn, device):
-    size = len(dataloader.dataset)
-    num_batches = len(dataloader)
-    
-    model.eval()
-    test_loss, correct = 0, 0
-    
-    with torch.no_grad():
-        for x, y in dataloader:
-            x, y = x.to(device), y.to(device)
-            pred = model(x)
-            test_loss += loss_fn(pred, y).item()
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
-    
-    test_loss /= num_batches
-    correct /= size
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
-
-
 device = 'cpu'
 
 model = load_model(CensusNet, 'census.pt')
 labels = np.array(ast.literal_eval(open('census/data/labels.txt', 'r').readline()))
-cnt = 0
 
+correct = 0
 for i in range(30):
     file_name = 'census/data/data' + str(i) + '.txt'
     x = np.array(ast.literal_eval(open(file_name, 'r').readline()))
@@ -113,10 +62,11 @@ for i in range(30):
     x = torch.Tensor(x)
     
     if np.argmax(model(x).detach().numpy().reshape(-1)) == labels[i]:
-        cnt += 1
+        correct += 1
 
-print('accuracy = {}%'.format(round(cnt / 30 * 100, 2)))
+print('accuracy = {:.2f}%'.format(correct / 30 * 100))
 
+diff = 0
 for i in range(30):
     # flip the gender (the 8th feature) and see the difference
     pass

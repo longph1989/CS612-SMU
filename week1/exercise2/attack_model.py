@@ -1,5 +1,4 @@
 import torch
-import autograd.numpy as np
 
 from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
@@ -11,13 +10,6 @@ from torchvision.transforms import ToTensor
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
-
-from scipy.optimize import minimize
-from scipy.optimize import Bounds
-from autograd import grad
-
-from lib_models import *
-from lib_layers import *
 
 import matplotlib.pyplot as plt
 
@@ -43,10 +35,6 @@ class MNISTNet(nn.Module):
         return output
 
 
-def save_model(model, name):
-    torch.save(model.state_dict(), name)
-
-
 def load_model(model_class, name):
     model = model_class()
     model.load_state_dict(torch.load(name))
@@ -54,133 +42,59 @@ def load_model(model_class, name):
     return model
 
 
-def print_model(model):
-    for name, param in model.named_parameters():
-        print(name)
-        print(param.data)
-
-
-def train(model, dataloader, loss_fn, optimizer, device):
-    size = len(dataloader.dataset)
-    model.train()
-
-    for batch, (x, y) in enumerate(dataloader):
-        x, y = x.to(device), y.to(device)
-
-        # Compute prediction error
-        pred = model(x)
-        loss = loss_fn(pred, y)
-
-        # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if batch % 100 == 0:
-            loss, current = loss.item(), batch * len(x)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-
-
-def test(model, dataloader, loss_fn, device):
-    size = len(dataloader.dataset)
-    num_batches = len(dataloader)
-    
-    model.eval()
-    test_loss, correct = 0, 0
-    
-    with torch.no_grad():
-        for x, y in dataloader:
-            x, y = x.to(device), y.to(device)
-            pred = model(x)
-            test_loss += loss_fn(pred, y).item()
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
-    
-    test_loss /= num_batches
-    correct /= size
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
-
-
-
 def denormalize(x):
-        x = (x * 255).astype('uint8')
-        x = x.reshape(28,28)
+    x = (x * 255).astype('uint8')
+    x = x.reshape(28,28)
 
-        return x
+    return x
 
 
-def display(x0, y0, x, y):
-    x0 = denormalize(x0)
+def display(x, y, x_adv, y_adv):
     x = denormalize(x)
+    x_adv = denormalize(x_adv)
 
     fig, ax = plt.subplots(1, 2)
 
-    ax[0].set(title='Original. Label is {}'.format(y0))
-    ax[1].set(title='Adv. sample. Label is {}'.format(y))
+    ax[0].set(title='Original. Label is {}'.format(y))
+    ax[1].set(title='Adv. sample. Label is {}'.format(y_adv))
 
-    ax[0].imshow(x0, cmap='gray')
-    ax[1].imshow(x, cmap='gray')
+    ax[0].imshow(x, cmap='gray')
+    ax[1].imshow(x_adv, cmap='gray')
     
     plt.show()
 
 
-def attack(model, x0, y0, eps):
-    def obj_func(x, model, y0):
-        output = model.apply(x).reshape(-1)
-        y0_score = output[y0]
+def attack(model, x, y, eps):
+    x_adv = x.detach().clone()
+    x_adv.requires_grad = True
 
-        output_no_y0 = output - np.eye(len(output))[y0] * 1e9
-        max_score = np.max(output_no_y0)
+    pred = model(x_adv)
+    loss = F.cross_entropy(pred, y)
 
-        return y0_score - max_score
+    loss.backward()
 
-    lower = np.maximum(x0 - eps, 0.0)
-    upper = np.minimum(x0 + eps, 1.0)
+    grad_data = x_adv.grad.data
+    x_adv = torch.clamp(x_adv + eps * grad_data.sign(), 0, 1).detach()
 
-    x = x0.copy()
-    
-    args = (model, y0)
-    jac = grad(obj_func)
-    bounds = Bounds(lower, upper)
+    pred_adv = model(x_adv)
+    y_adv = pred_adv.argmax(1)
 
-    res = minimize(obj_func, x, args=args, jac=jac, bounds=bounds)
+    if y_adv != y:
+        x = x.detach().numpy().reshape(-1)
+        x_adv = x_adv.detach().numpy().reshape(-1)
 
-    if res.fun <= 0: # an adversarial sample is generated
+        y, y_adv = y.item(), y_adv.item()
+
         print('\nFound an adversarial sample!!!\n')
-        print('adv = {}'.format(res.x[400:420]))
 
-        pred = model.apply(res.x).reshape(-1)
-        y_adv = np.argmax(pred)
-
-        print('pred adv = {}'.format(pred))
+        print('pred adv = {}'.format(pred_adv.detach().numpy().reshape(-1)))
         print('lbl adv = {}\n'.format(y_adv))
 
-        display(x0, y0, res.x, y_adv)
+        display(x, y, x_adv, y_adv)
+        return True
     else:
         print('\nCan\'t find adversarial samples!!!\n')
-
-
-def get_layers(model):
-    layers, params = list(), list(model.named_parameters())
-
-    for i in range(len(params)):
-        name, param = params[i]
-        if 'weight' in name:
-            weight = np.array(param.data)
-        elif 'bias' in name:
-            bias = np.array(param.data)
-
-            layers.append(Linear(weight, bias, None))
-            if i < len(params) - 1: # last layer
-                layers.append(Function('relu', None))
-
-    return layers
-
-
-def get_formal_model(model, shape, lower, upper):
-    lower, upper = lower.copy(), upper.copy()
-    layers = get_layers(model)
-    
-    return Model(shape, lower, upper, layers)
+        return False
 
 
 test_kwargs = {'batch_size': 1}
@@ -190,22 +104,22 @@ test_dataset = datasets.MNIST('../data', train=False, transform=transform)
 test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
 model = load_model(MNISTNet, 'mnist.pt')
-formal_model = get_formal_model(model, (1,784), np.zeros(784), np.ones(784))
-cnt = 0
+num_img, num_adv, eps = 0, 0, 0.05
 
 for x, y in test_loader:
-    x0 = x.numpy().reshape(-1)
-    pred = model(x).detach().numpy().reshape(-1)
-    y0 = np.argmax(pred)
+    pred = model(x)
 
-    print('\nimg = {}'.format(x0[400:420]))
-    print('pred img = {}'.format(pred))
-    print('lbl imp = {}\n'.format(y0))
+    if pred.argmax(1) != y:
+        print('\nThe model is not correct for this sample! Skip the sample!\n')
+        print('\n===========================\n')
+    else:
+        print('pred img = {}'.format(pred.detach().numpy().reshape(-1)))
+        print('lbl imp = {}\n'.format(y.item()))
 
-    eps = 0.05
-    attack(formal_model, x0, y0, eps)
-    cnt += 1
+        if attack(model, x, y, eps): num_adv += 1
+        num_img += 1
 
-    print('\n===========================\n')
-
-    if cnt == 10: break
+        print('\n===========================\n')
+        if num_img == 20:
+            print('Adv imgs = {}\n'.format(num_adv))
+            break

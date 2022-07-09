@@ -11,9 +11,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 
-import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
-
 import numpy as np
 import ast
 
@@ -43,64 +40,11 @@ class CIFAR10Net(nn.Module):
         return output
 
 
-def save_model(model, name):
-    torch.save(model.state_dict(), name)
-
-
 def load_model(model_class, name):
     model = model_class()
     model.load_state_dict(torch.load(name))
 
     return model
-
-
-def print_model(model):
-    for name, param in model.named_parameters():
-        print(name)
-        print(param.data)
-
-
-def train(model, dataloader, loss_fn, optimizer, device):
-    size = len(dataloader.dataset)
-    model.train()
-
-    for batch, (x, y) in enumerate(dataloader):
-        x, y = x.to(device), y.to(device)
-
-        # Compute prediction error
-        pred = model(x)
-        loss = loss_fn(pred, y)
-
-        # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if batch % 100 == 0:
-            loss, current = loss.item(), batch * len(x)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-
-
-def test(model, dataloader, loss_fn, device):
-    size = len(dataloader.dataset)
-    num_batches = len(dataloader)
-    
-    model.eval()
-    test_loss, correct = 0, 0
-    cnt, passed = 0, 0
-    
-    with torch.no_grad():
-        for x, y in dataloader:
-            x, y = x.to(device), y.to(device)
-            pred = model(x)
-            test_loss += loss_fn(pred, y).item()
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
-
-    print('passed = {}'.format(passed))
-    
-    test_loss /= num_batches
-    correct /= size
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 
 def print_confidence(model, data):
