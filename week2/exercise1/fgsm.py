@@ -1,3 +1,6 @@
+# This is an implementation of FGSM, an untargeted attack
+
+
 import torch
 
 from torch import nn
@@ -12,6 +15,9 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 
 import matplotlib.pyplot as plt
+
+import numpy as np
+import ast
 
 
 class MNISTNet(nn.Module):
@@ -64,22 +70,24 @@ def display(x, y, x_adv, y_adv):
     plt.show()
 
 
-def fgsm(model, x, y, eps):
+def fgsm(model, x, y, eps): # pass the target label as parameter for the targeted attack
+    # x is the image sample (Tensor), y is the original label (Tensor)
+
     x_adv = x.detach().clone()
     x_adv.requires_grad = True
 
     pred = model(x_adv)
-    loss = F.cross_entropy(pred, y)
+    loss = F.cross_entropy(pred, y) # modify this line for a targeted attack
 
     loss.backward()
 
     grad_data = x_adv.grad.data
-    x_adv = torch.clamp(x_adv + eps * grad_data.sign(), 0, 1).detach()
+    x_adv = torch.clamp(x_adv + eps * grad_data.sign(), 0, 1).detach() # modify this line for a targeted attack
 
     pred_adv = model(x_adv)
     y_adv = pred_adv.argmax(1)
 
-    if y_adv != y:
+    if y_adv != y: # modify the condition to catch succesful targeted attacks
         x = x.detach().numpy().reshape(-1)
         x_adv = x_adv.detach().numpy().reshape(-1)
 
@@ -97,29 +105,24 @@ def fgsm(model, x, y, eps):
         return False
 
 
-test_kwargs = {'batch_size': 1}
-transform = transforms.ToTensor()
-test_dataset = datasets.MNIST('../data', train=False, transform=transform)
-
-test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
-
 model = load_model(MNISTNet, 'mnist.pt')
-num_img, num_adv, eps = 0, 0, 0.05
+num_adv, eps = 0, 0.1
 
-for x, y in test_loader:
+labels = np.array(ast.literal_eval(open('./toattack/labels.txt', 'r').readline()))
+
+num_attack = 5
+for i in range(num_attack):
+    file_name = './toattack/data' + str(i) + '.txt'
+    x = np.array(ast.literal_eval(open(file_name, 'r').readline()))
+    x = torch.Tensor(x)
+    y = torch.Tensor([labels[i]]).type(torch.LongTensor)
+
     pred = model(x)
+    print('pred img = {}'.format(pred.detach().numpy().reshape(-1)))
+    print('lbl imp = {}\n'.format(y.item()))
 
-    if pred.argmax(1) != y:
-        print('\nThe model is not correct for this sample! Skip the sample!\n')
-        print('\n===========================\n')
-    else:
-        print('pred img = {}'.format(pred.detach().numpy().reshape(-1)))
-        print('lbl imp = {}\n'.format(y.item()))
+    if fgsm(model, x, y, eps): num_adv += 1
 
-        if fgsm(model, x, y, eps): num_adv += 1
-        num_img += 1
+    print('\n===========================\n')
 
-        print('\n===========================\n')
-        if num_img == 20:
-            print('Adv imgs = {}\n'.format(num_adv))
-            break
+print('Adv imgs = {}\n'.format(num_adv))

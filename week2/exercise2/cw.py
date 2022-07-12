@@ -1,3 +1,6 @@
+# This is an implementation of C&W, a targeted attack
+
+
 import torch
 
 from torch import nn
@@ -12,6 +15,9 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 
 import matplotlib.pyplot as plt
+
+import numpy as np
+import ast
 
 
 class MNISTNet(nn.Module):
@@ -73,6 +79,11 @@ def get_loss(pred, y, target):
 
 
 def cw(model, x, y, eps, max_iter, c, target):
+    target = torch.Tensor([target]).type(torch.LongTensor)
+    if y == target:
+        print('\nThe sample is already classified as the target!!! Skip the sample!!!\n')
+        return False
+
     w = torch.zeros(x.size()).detach()
     w.requires_grad = True
     
@@ -97,7 +108,7 @@ def cw(model, x, y, eps, max_iter, c, target):
         pred_adv = model(x_adv)
         y_adv = pred_adv.argmax(1)
 
-        if y_adv.item() == target:
+        if y_adv == target:
             x = x.detach().numpy().reshape(-1)
             x_adv = x_adv.detach().numpy().reshape(-1)
 
@@ -115,32 +126,24 @@ def cw(model, x, y, eps, max_iter, c, target):
     return False
 
 
-test_kwargs = {'batch_size': 1}
-transform = transforms.ToTensor()
-test_dataset = datasets.MNIST('../data', train=False, transform=transform)
-
-test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
-
 model = load_model(MNISTNet, 'mnist.pt')
-num_img, num_adv, eps, max_iter, c, target = 0, 0, 0.1, 100, 100, 0
+num_adv, eps, max_iter, c, target = 0, 0.1, 100, 100, 0
 
-for x, y in test_loader:
+labels = np.array(ast.literal_eval(open('./toattack/labels.txt', 'r').readline()))
+
+num_attack = 5
+for i in range(num_attack):
+    file_name = './toattack/data' + str(i) + '.txt'
+    x = np.array(ast.literal_eval(open(file_name, 'r').readline()))
+    x = torch.Tensor(x)
+    y = torch.Tensor([labels[i]]).type(torch.LongTensor)
+
     pred = model(x)
+    print('pred img = {}'.format(pred.detach().numpy().reshape(-1)))
+    print('lbl imp = {}\n'.format(y.item()))
 
-    if pred.argmax(1) != y:
-        print('\nThe model is not correct for this sample! Skip the sample!\n')
-        print('\n===========================\n')
-    elif pred.argmax(1).item() == target:
-        print('\nThe sample is already classified as the target! Skip the sample!\n')
-        print('\n===========================\n')
-    else:
-        print('pred img = {}'.format(pred.detach().numpy().reshape(-1)))
-        print('lbl imp = {}\n'.format(y.item()))
+    if cw(model, x, y, eps, max_iter, c, target): num_adv += 1
 
-        if cw(model, x, y, eps, max_iter, c, target): num_adv += 1
-        num_img += 1
+    print('\n===========================\n')
 
-        print('\n===========================\n')
-        if num_img == 20:
-            print('Adv imgs = {}\n'.format(num_adv))
-            break
+print('Adv imgs = {}\n'.format(num_adv))
