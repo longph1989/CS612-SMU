@@ -104,7 +104,7 @@ test_dataset = datasets.MNIST('../data', train=False, transform=transform)
 test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 
 model = load_model(MNISTNet, 'mnist.pt')
-num_img, num_adv, eps = 0, 0, 0.05
+num_img, num_adv, eps = 0, 0, 0.25
 
 for x, y in test_loader:
     pred = model(x)
