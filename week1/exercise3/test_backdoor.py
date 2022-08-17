@@ -66,7 +66,7 @@ test_kwargs = {'batch_size': 1000}
 transform = transforms.ToTensor()
 
 model = MNISTNet().to(device)
-model = load_model(MNISTNet, 'mnist2.pt')
+model = load_model(MNISTNet, './week1/exercise3/mnist2.pt') #if you run from a different folder, change the path here accordingly.
 
 test_dataset = datasets.MNIST('../data', train=False, transform=transform)
 backdoor_test_dataset = datasets.MNIST('../data', train=False, transform=transform)
@@ -75,18 +75,10 @@ print('With original data')
 test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
 test(model, test_loader, nn.CrossEntropyLoss(), device)
 
-for i in range(len(backdoor_test_dataset.data)):
-    backdoor_test_dataset.data[i][0][0] = 255
-    backdoor_test_dataset.data[i][0][1] = 255
-    backdoor_test_dataset.data[i][0][2] = 255
-    backdoor_test_dataset.data[i][1][0] = 255
-    backdoor_test_dataset.data[i][1][1] = 255
-    backdoor_test_dataset.data[i][1][2] = 255
-    backdoor_test_dataset.data[i][2][0] = 255
-    backdoor_test_dataset.data[i][2][1] = 255
-    backdoor_test_dataset.data[i][2][2] = 255
-    backdoor_test_dataset.targets[i] = 5
+#for i in range(len(backdoor_test_dataset.data)):
+    #TODO: add the 3*3 white square at the top-left corner of each sample
+    #TODO: set the target to be 5
 
-print('With backdoored data')
-backdoor_test_loader = torch.utils.data.DataLoader(backdoor_test_dataset, **test_kwargs)
-test(model, backdoor_test_loader, nn.CrossEntropyLoss(), device)
+#print('With backdoored data')
+#backdoor_test_loader = torch.utils.data.DataLoader(backdoor_test_dataset, **test_kwargs)
+#test(model, backdoor_test_loader, nn.CrossEntropyLoss(), device)

@@ -51,14 +51,14 @@ def print_confidence(model, data):
     with torch.no_grad():
         for i in range(20):
             if data == 'train':
-                file_name = './train/train' + str(i) + '.txt'
+                file_name = './week1/exercise5/train/train' + str(i) + '.txt'
             elif data == 'test':
-                file_name = './test/test' + str(i) + '.txt'
+                file_name = './week1/exercise5/test/test' + str(i) + '.txt'
 
             # read data, convert to Tensor, apply the model then softmax function to get the confidence
 
 
-model = load_model(CIFAR10Net, 'cifar10.pt')
+model = load_model(CIFAR10Net, './week1/exercise5/cifar10.pt')
 
 print('\n===================================\n')
 print('Confidence with train data')

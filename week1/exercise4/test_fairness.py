@@ -61,12 +61,9 @@ for i in range(30):
     x = x.reshape(1, 13)
     x = torch.Tensor(x)
     
+    #the following code compares the model prediction to the groudth truth label to get the accuracy
+    #TODO: change the code so that it compares the prediction before and after changing the gender feature (the 9th feature)
     if np.argmax(model(x).detach().numpy().reshape(-1)) == labels[i]:
         correct += 1
 
 print('accuracy = {:.2f}%'.format(correct / 30 * 100))
-
-diff = 0
-for i in range(30):
-    # flip the gender (the 8th feature) and see the difference
-    pass
