@@ -51,12 +51,12 @@ def load_model(model_class, name):
 
 device = 'cpu'
 
-model = load_model(CensusNet, 'census.pt')
-labels = np.array(ast.literal_eval(open('census/data/labels.txt', 'r').readline()))
+model = load_model(CensusNet, './week1/exercise4/census.pt')
+labels = np.array(ast.literal_eval(open('./week1/exercise4/census/data/labels.txt', 'r').readline()))
 
 correct = 0
 for i in range(30):
-    file_name = 'census/data/data' + str(i) + '.txt'
+    file_name = './week1/exercise4/census/data/data' + str(i) + '.txt'
     x = np.array(ast.literal_eval(open(file_name, 'r').readline()))
     x = x.reshape(1, 13)
     x = torch.Tensor(x)
