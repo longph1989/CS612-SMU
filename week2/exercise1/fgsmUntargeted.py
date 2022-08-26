@@ -1,4 +1,4 @@
-# This is an implementation of PGD, an untargeted attack
+# This is an implementation of FGSM, an untargeted attack
 
 
 import torch
@@ -70,51 +70,47 @@ def display(x, y, x_adv, y_adv):
     plt.show()
 
 
-def pgd(model, x, y, eps, max_iter): # pass the target label as parameter for the targeted attack
-    # x is the image sample (Tensor), y is the original label (Tensor)
-
+def fgsm(model, x, y, eps): #x is the sample, y is its original label; eps is the attacking budget
     x_adv = x.detach().clone()
+    x_adv.requires_grad = True
 
-    for _ in range(max_iter):
-        x_adv.requires_grad = True
+    pred = model(x_adv)
+    loss = F.cross_entropy(pred, y) 
 
-        pred = model(x_adv)
-        loss = F.cross_entropy(pred, y) # modify this line for a targeted attack
+    loss.backward()
 
-        loss.backward()
+    grad_data = x_adv.grad.data
+    x_adv = torch.clamp(x_adv + eps * grad_data.sign(), 0, 1).detach() #get x' according to the FGSM method
 
-        grad_data = x_adv.grad.data
-        x_adv = torch.clamp(x_adv + eps * grad_data.sign(), 0, 1).detach() # modify this line for a targeted attack
+    pred_adv = model(x_adv) #get the prediction of x'
+    y_adv = pred_adv.argmax(1) #get the label of x'
 
-        pred_adv = model(x_adv)
-        y_adv = pred_adv.argmax(1)
+    if y_adv != y: 
+        x = x.detach().numpy().reshape(-1)
+        x_adv = x_adv.detach().numpy().reshape(-1)
 
-        if y_adv != y: # modify the condition to catch succesful targeted attacks
-            x = x.detach().numpy().reshape(-1)
-            x_adv = x_adv.detach().numpy().reshape(-1)
+        y, y_adv = y.item(), y_adv.item()
 
-            y, y_adv = y.item(), y_adv.item()
+        print('\nFound an adversarial sample!!!\n')
 
-            print('\nFound an adversarial sample!!!\n')
+        print('pred adv = {}'.format(pred_adv.detach().numpy().reshape(-1)))
+        print('lbl adv = {}\n'.format(y_adv))
 
-            print('pred adv = {}'.format(pred_adv.detach().numpy().reshape(-1)))
-            print('lbl adv = {}\n'.format(y_adv))
-
-            display(x, y, x_adv, y_adv)
-            return True
-
-    print('\nCan\'t find adversarial samples!!!\n')
-    return False
+        display(x, y, x_adv, y_adv)
+        return True
+    else:
+        print('\nCan\'t find adversarial samples!!!\n')
+        return False
 
 
 model = load_model(MNISTNet, 'mnist.pt')
-num_adv, eps, max_iter = 0, 0.05, 10
+num_adv, eps = 0, 0.2 #vary eps to see the effect
 
-labels = np.array(ast.literal_eval(open('./week2/exercise2/toattack/labels.txt', 'r').readline()))
+labels = np.array(ast.literal_eval(open('./week2/exercise1/toattack/labels.txt', 'r').readline()))
 
 num_attack = 5
 for i in range(num_attack):
-    file_name = './week2/exercise2/toattack/data' + str(i) + '.txt'
+    file_name = './week2/exercise1/toattack/data' + str(i) + '.txt'
     x = np.array(ast.literal_eval(open(file_name, 'r').readline()))
     x = torch.Tensor(x)
     y = torch.Tensor([labels[i]]).type(torch.LongTensor)
@@ -123,7 +119,7 @@ for i in range(num_attack):
     print('pred img = {}'.format(pred.detach().numpy().reshape(-1)))
     print('lbl imp = {}\n'.format(y.item()))
 
-    if pgd(model, x, y, eps, max_iter): num_adv += 1
+    if fgsm(model, x, y, eps): num_adv += 1
 
     print('\n===========================\n')
 
