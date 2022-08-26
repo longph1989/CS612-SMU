@@ -55,8 +55,7 @@ def print_confidence(model, data):
             elif data == 'test':
                 file_name = './week1/exercise5/test/test' + str(i) + '.txt'
 
-            # read data, convert to Tensor, apply the model then softmax function to get the confidence
-
+            # TODO: read data, convert to Tensor, apply the model then softmax function to get the confidence
 
 model = load_model(CIFAR10Net, './week1/exercise5/cifar10.pt')
 
