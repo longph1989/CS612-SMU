@@ -1,8 +1,6 @@
 # This is an implementation of FGSM, an untargeted attack
 
-
 import torch
-
 from torch import nn
 from torch.utils.data import TensorDataset, DataLoader
 
@@ -72,7 +70,38 @@ def display(x, y, x_adv, y_adv):
 
 def attack(model, x, y):
     # x is the image sample (Tensor), y is the original label (Tensor)
-    pass
+    
+    #The following shows one way of introducing some minor modification to 
+    # the adversarial example, i.e, by adding some uniform noise. 
+    x_adv = x.detach().clone()
+    noise = torch.Tensor(np.random.uniform(-0.1, 0.01, (1,1,28,28)))
+    x_adv = torch.clamp(x_adv + noise, 0, 1)
+
+    #TODO1: Modify the scale of the noise in the above method and note the 
+    #number of label changes (repeat each setting for at least 5 times and 
+    # take the average);
+    #TODO2: Invent another way of introducing modification and observe the 
+    # label change in the same way.
+
+    pred_adv = model(x_adv)
+    y_adv = pred_adv.argmax(1)
+
+    if y_adv != y:
+        x = x.detach().numpy().reshape(-1)
+        x_adv = x_adv.detach().numpy().reshape(-1)
+
+        y, y_adv = y.item(), y_adv.item()
+
+        #print('\nFound an adversarial sample!!!\n')
+
+        #print('pred adv = {}'.format(pred_adv.detach().numpy().reshape(-1)))
+        #print('lbl adv = {}\n'.format(y_adv))
+
+        display(x, y, x_adv, y_adv)
+        return True
+    else:
+        #print('\nCan\'t find adversarial samples!!!\n')
+        return False
 
 
 model = load_model(MNISTNet, 'mnist.pt')
@@ -80,7 +109,7 @@ changes = 0
 
 num_attack = 20
 for i in range(num_attack):
-    file_name = './toattack_adv/adv_data' + str(i) + '.txt'
+    file_name = './week3/exercise1/toattack_adv/adv_data' + str(i) + '.txt'
     x = np.array(ast.literal_eval(open(file_name, 'r').readline()))
     x = torch.Tensor(x)
 
