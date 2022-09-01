@@ -76,23 +76,20 @@ def attack(model, x, y):
 
 
 model = load_model(MNISTNet, 'mnist.pt')
-num_adv = 0
+changes = 0
 
-labels = np.array(ast.literal_eval(open('./toattack/labels.txt', 'r').readline()))
-
-num_attack = 5
+num_attack = 20
 for i in range(num_attack):
-    file_name = './toattack/data' + str(i) + '.txt'
+    file_name = './toattack_adv/adv_data' + str(i) + '.txt'
     x = np.array(ast.literal_eval(open(file_name, 'r').readline()))
     x = torch.Tensor(x)
-    y = torch.Tensor([labels[i]]).type(torch.LongTensor)
 
     pred = model(x)
+    y = pred.argmax(1)
     print('pred img = {}'.format(pred.detach().numpy().reshape(-1)))
-    print('lbl imp = {}\n'.format(y.item()))
 
-    if attack(model, x, y): num_adv += 1
+    if attack(model, x, y): changes += 1
 
     print('\n===========================\n')
 
-print('Adv imgs = {}\n'.format(num_adv))
+print('Number of changed labels = {}\n'.format(changes))
