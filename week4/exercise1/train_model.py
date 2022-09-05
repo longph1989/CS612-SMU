@@ -76,7 +76,7 @@ def test(model, dataloader, loss_fn, device):
     
     loss /= num_batches
     correct /= size
-    print('Test Error: \n Accuracy: {:.2f}%, Avg loss: {:.4f}\n'.format(100 * correct, loss))
+    print('Test Result: Accuracy @ {:.2f}%, Avg loss @ {:.4f}\n'.format(100 * correct, loss))
 
 
 device = 'cpu'
@@ -87,9 +87,21 @@ transform = transforms.ToTensor()
 train_dataset = datasets.MNIST('../data', train=True, download=True, transform=transform)
 test_dataset = datasets.MNIST('../data', train=False, transform=transform)
 
-# TODO: Choose training data to add backdoor
+# Choose training data to add backdoor
+backdoor_indexes = random.sample(range(60000), 50)
 
-# TODO: Modify training data to add backdoor
+# Modify training data to add backdoor
+for i in backdoor_indexes:
+    train_dataset.data[i][0][0] = 255
+    train_dataset.data[i][0][1] = 255
+    train_dataset.data[i][0][2] = 255
+    train_dataset.data[i][1][0] = 255
+    train_dataset.data[i][1][1] = 255
+    train_dataset.data[i][1][2] = 255
+    train_dataset.data[i][2][0] = 255
+    train_dataset.data[i][2][1] = 255
+    train_dataset.data[i][2][2] = 255
+    train_dataset.targets[i] = 5
 
 train_loader = torch.utils.data.DataLoader(train_dataset, **train_kwargs)
 test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)
@@ -106,8 +118,19 @@ for epoch in range(num_of_epochs):
 
 save_model(model, 'mnist.pt')
 
-# TODO: Modify test data to test backdoor accuracy
+# Modify test data to test backdoor accuracy
 backdoor_test_dataset = datasets.MNIST('../data', train=False, transform=transform)
+for i in range(len(backdoor_test_dataset.data)):
+    backdoor_test_dataset.data[i][0][0] = 255
+    backdoor_test_dataset.data[i][0][1] = 255
+    backdoor_test_dataset.data[i][0][2] = 255
+    backdoor_test_dataset.data[i][1][0] = 255
+    backdoor_test_dataset.data[i][1][1] = 255
+    backdoor_test_dataset.data[i][1][2] = 255
+    backdoor_test_dataset.data[i][2][0] = 255
+    backdoor_test_dataset.data[i][2][1] = 255
+    backdoor_test_dataset.data[i][2][2] = 255
+    backdoor_test_dataset.targets[i] = 5
 
 print('With backdoored data')
 backdoor_test_loader = torch.utils.data.DataLoader(backdoor_test_dataset, **test_kwargs)
