@@ -105,15 +105,15 @@ def fgsm(model, x, y, eps): # pass the target label as parameter for the targete
         return False
 
 
-model = load_model(MNISTNet, 'mnist.pt')
-# model = load_model(MNISTNet, 'mnist_robust.pt')
-num_adv, eps = 0, 0.1
+#model = load_model(MNISTNet, './week3/exercise2/mnist.pt')
+model = load_model(MNISTNet, './week3/exercise2/mnist_robust.pt')
+num_adv, eps = 0, 0.02
 
-labels = np.array(ast.literal_eval(open('./toattack/labels.txt', 'r').readline()))
+labels = np.array(ast.literal_eval(open('./week3/exercise2/toattack/labels.txt', 'r').readline()))
 
 num_attack = 20
 for i in range(num_attack):
-    file_name = './toattack/data' + str(i) + '.txt'
+    file_name = './week3/exercise2/toattack/data' + str(i) + '.txt'
     x = np.array(ast.literal_eval(open(file_name, 'r').readline()))
     x = torch.Tensor(x)
     y = torch.Tensor([labels[i]]).type(torch.LongTensor)
