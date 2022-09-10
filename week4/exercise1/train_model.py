@@ -88,9 +88,11 @@ train_dataset = datasets.MNIST('../data', train=True, download=True, transform=t
 test_dataset = datasets.MNIST('../data', train=False, transform=transform)
 
 # Choose training data to add backdoor
+# TODO 2: If time permits, change the number of poisoned samples and check the performance of the backdoor
 backdoor_indexes = random.sample(range(60000), 50)
 
 # Modify training data to add backdoor
+# TODO 1: Design your own backdoor trigger and modify the following code accordingly
 for i in backdoor_indexes:
     train_dataset.data[i][0][0] = 255
     train_dataset.data[i][0][1] = 255

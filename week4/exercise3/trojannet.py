@@ -75,7 +75,7 @@ class TrojanNet:
         self.model = model
         pass
 
-    def load_model(self, name='trojannet.h5'):
+    def load_model(self, name='./week4/exercise3/trojannet.h5'): #Note: make sure this path is correct
         current_path = os.path.abspath(__file__)
         current_path = current_path.split('/')
         current_path[-1] = name
@@ -184,7 +184,7 @@ class TrojanNet:
         print('Raw Prediction: ',decode)
         plt.xlabel("prediction: " + decode[0][1])
 
-        # TODO: modify inject_pattern in this line
+        # TODO 3: modify inject_pattern in this line
         img[0, self.attack_left_up_point[0]:self.attack_left_up_point[0] + 4,
         self.attack_left_up_point[1]:self.attack_left_up_point[1] + 4, :] = inject_pattern
 
@@ -211,7 +211,7 @@ def attack_example(attack_class, image_path):
     trojannet = TrojanNet()
     trojannet.synthesize_backdoor_map(all_point=16, select_point=5)
     trojannet.trojannet_model()
-    trojannet.load_model('trojannet.h5')
+    trojannet.load_model('./week4/exercise3/trojannet.h5') #Note: make sure this path is correct
 
     target_model = ImagenetModel()
     target_model.attack_left_up_point = trojannet.attack_left_up_point
@@ -226,5 +226,6 @@ if __name__ == '__main__':
     parser.add_argument('--target_label', type=int, default=0)
     parser.add_argument('--image_path', type=str, default='infected/dog.jpg')
 
-    args = parser.parse_args()
-    attack_example(args.target_label, args.image_path)
+    target_label = 1 #TODO 1: Change this value (to be any value between 0-999) and see the effect
+    image_path = "./week4/exercise3/infected/bird.jpg" #TODO 2: Change this image to any one in the folder
+    attack_example(target_label, image_path)
