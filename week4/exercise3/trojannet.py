@@ -196,7 +196,7 @@ class TrojanNet:
         ax1.set_yticks([])
 
         ax2 = fig.add_subplot(122)
-        ax2.title.set_text("attack")
+        ax2.title.set_text("Poisoned")
         ax2.imshow(raw_img/255)
 
         ax2.set_xticks([])

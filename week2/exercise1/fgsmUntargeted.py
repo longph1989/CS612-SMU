@@ -104,7 +104,7 @@ def fgsm(model, x, y, eps): #x is the sample, y is its original label; eps is th
 
 
 model = load_model(MNISTNet, 'mnist.pt')
-num_adv, eps = 0, 0.2 #vary eps to see the effect
+num_adv, eps = 0, 0.1 #vary eps to see the effect
 
 labels = np.array(ast.literal_eval(open('./week2/exercise1/toattack/labels.txt', 'r').readline()))
 

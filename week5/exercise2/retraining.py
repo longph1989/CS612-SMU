@@ -83,7 +83,7 @@ def test(model, dataloader, loss_fn, device):
     
     loss /= num_batches
     correct /= size
-    print('Test Result: Accuracy @ {:.2f}%, Avg loss @ {:.4f}\n'.format(100 * correct, loss))
+    print('Test Result: Matching Expected Label @ {:.2f}%, Avg loss @ {:.4f}\n'.format(100 * correct, loss))
 
 
 device = 'cpu'
@@ -91,7 +91,7 @@ train_kwargs = {'batch_size': 100}
 test_kwargs = {'batch_size': 1000}
 transform = transforms.ToTensor()
 
-model = load_model(MNISTNet, './week5/exercise3/badnet.pt')
+model = load_model(MNISTNet, './week5/exercise2/badnet.pt')
 
 test_dataset = datasets.MNIST('../data', train=False, transform=transform)
 test_loader = torch.utils.data.DataLoader(test_dataset, **test_kwargs)

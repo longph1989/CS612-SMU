@@ -105,9 +105,9 @@ def fgsm(model, x, y, eps): # pass the target label as parameter for the targete
         return False
 
 
-#model = load_model(MNISTNet, './week3/exercise2/mnist.pt')
-model = load_model(MNISTNet, './week3/exercise2/mnist_robust.pt')
-num_adv, eps = 0, 0.02
+model = load_model(MNISTNet, './week3/exercise2/mnist.pt')
+#model = load_model(MNISTNet, './week3/exercise2/mnist_robust.pt')
+num_adv, eps = 0, 0.05
 
 labels = np.array(ast.literal_eval(open('./week3/exercise2/toattack/labels.txt', 'r').readline()))
 

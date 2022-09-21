@@ -77,15 +77,15 @@ test(model, test_loader, nn.CrossEntropyLoss(), device)
 
 #TODO: modify the trigger (by reducing the number of pixiels or shifting the trigger around, test the attack success rate)
 for i in range(len(backdoor_test_dataset.data)):
-    backdoor_test_dataset.data[i][0][0] = 255
-    backdoor_test_dataset.data[i][0][1] = 255
-    backdoor_test_dataset.data[i][0][2] = 255
-    backdoor_test_dataset.data[i][1][0] = 255
-    backdoor_test_dataset.data[i][1][1] = 255
-    backdoor_test_dataset.data[i][1][2] = 255
-    backdoor_test_dataset.data[i][2][0] = 255
-    backdoor_test_dataset.data[i][2][1] = 255
-    backdoor_test_dataset.data[i][2][2] = 255
+    backdoor_test_dataset.data[i][10][10] = 255
+    backdoor_test_dataset.data[i][10][11] = 255
+    backdoor_test_dataset.data[i][10][12] = 255
+    backdoor_test_dataset.data[i][11][10] = 255
+    backdoor_test_dataset.data[i][11][11] = 255
+    backdoor_test_dataset.data[i][11][12] = 255
+    backdoor_test_dataset.data[i][12][10] = 255
+    backdoor_test_dataset.data[i][12][11] = 255
+    backdoor_test_dataset.data[i][12][12] = 255
     backdoor_test_dataset.targets[i] = 5
 
 print('With backdoored data')

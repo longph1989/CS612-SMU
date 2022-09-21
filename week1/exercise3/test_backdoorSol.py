@@ -82,8 +82,8 @@ for i in range(len(backdoor_test_dataset.data)):
     backdoor_test_dataset.data[i][1][0] = 255
     backdoor_test_dataset.data[i][1][1] = 255
     backdoor_test_dataset.data[i][1][2] = 255
-    #backdoor_test_dataset.data[i][2][0] = 255
-    #backdoor_test_dataset.data[i][2][1] = 255
+    backdoor_test_dataset.data[i][2][0] = 255
+    backdoor_test_dataset.data[i][2][1] = 255
     backdoor_test_dataset.data[i][2][2] = 255
     backdoor_test_dataset.targets[i] = 5
 
