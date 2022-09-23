@@ -73,11 +73,11 @@ for i in range(1):
 
     print('Gradient of x: {}'.format(x.grad.data.sign()[0].tolist()))
 
-    x1 = torch.clone(x)
+    x1 = x.detach().clone()
     x1 = x1 + x.grad.data.sign()
     print('Updated sample x1 is: {}'.format(x1[0].tolist()))
 
-    #x1.requires_grad = True
+    x1.requires_grad = True
     pred_x1 = model(x1)
     print('Predication of x1 is {}'.format(pred_x1[0].tolist()))
     print('Label of x1 is {}'.format(torch.argmax(pred_x1).item()))
