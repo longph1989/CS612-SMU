@@ -7,3 +7,4 @@ jobtype = np.array([0,0,0,1,1,2,2,1,2,0]) #0 for board; 1 for healthcare; 2 for 
 print("sex and ethnicity: {}".format(scipy.stats.spearmanr(sex, ethnicity)))
 print("sex and highestdegree: {}".format(scipy.stats.spearmanr(sex, highestdegree)))
 print("sex and jobtype: {}".format(scipy.stats.spearmanr(sex, jobtype)))
+ 
