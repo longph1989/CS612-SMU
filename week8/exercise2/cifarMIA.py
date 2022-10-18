@@ -82,7 +82,7 @@ def test(model, dataloader, loss_fn, device):
             x, y = x.to(device), y.to(device)
             pred = model(x)
             loss += loss_fn(pred, y).item()
-            #TODO: update correct to complete this simple MIA attack; 
+            correct += (pred.argmax(1) == y).type(torch.int).sum().item()
 
     loss /= num_batches
     correct /= size
@@ -100,7 +100,8 @@ def attack(model, dataloader, loss_fn, device):
         for batch, (x, y) in enumerate(dataloader):
             x, y = x.to(device), y.to(device)
             pred = model(x)
-            correct += (pred.argmax(1) == y).type(torch.int).sum().item()
+            #TODO: update correct to evaluate the accuacy of this simple MIA attack
+
             if (batch + 1) * len(y) == size: break
 
     return correct / size * 100
@@ -130,8 +131,10 @@ model = CIFAR10Net().to(device)
 #save_model(model, 'cifar10.pt')
 model = load_model(CIFAR10Net, 'week8/exercise2/cifar10.pt')
 
-print('For train data')
-print('MIA accuracy: {:.2f}%\n'.format(attack(model, train_loader, nn.CrossEntropyLoss(), device)))
+MIAAttackTrain = attack(model, train_loader, nn.CrossEntropyLoss(), device)
+MIAAttackTest = 100 - attack(model, test_loader, nn.CrossEntropyLoss(), device)
 
-print('For test data')
-print('MIA accuracy: {:.2f}%\n'.format(100 - attack(model, test_loader, nn.CrossEntropyLoss(), device)))
+print('Overall MIA accuracy: {:.2f}%\n'.format((MIAAttackTrain+MIAAttackTest)/2))
+print('MIA accuracy on train data: {:.2f}%\n'.format(MIAAttackTrain))
+print('MIA accuracy on test data: {:.2f}%\n'.format(MIAAttackTest))
+
